@@ -289,7 +289,7 @@ $('#tema').onclick = () => {
   raiz.dataset.theme = escuro ? 'light' : 'dark';
   try{ localStorage.setItem('gis-tema', raiz.dataset.theme); }catch(_){}
 };
-$('#rodape').textContent = `Atualizado em ${DADOS.gerado_em} · para atualizar, rode gerar_painel.py`;
+$('#rodape').textContent = `Atualizado em ${DADOS.gerado_em}`;
 rota();
 </script>
 </body>
