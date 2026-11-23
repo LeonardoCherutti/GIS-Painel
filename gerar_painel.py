@@ -1,8 +1,9 @@
 """Gera o index.html do GIS-Painel a partir dos estudos existentes em C:\\Pipelines.
 
 Uso:  python gerar_painel.py
-Varre Estudo-APS/estudos, Estudo-MAC/powerbi/projects e SUS-Estabelecimentos/powerbi/projects,
-lê cada estudo.json (e project.json no hospitalar) e embute os dados em template.html -> index.html.
+Varre Estudo-APS/estudos, Estudo-MAC/powerbi/projects, SUS-Estabelecimentos/powerbi/projects e
+Monitoramento-SUS/monitoramentos, lê cada estudo.json (project.json no hospitalar, monitoramento.json no monitoramento)
+e embute os dados em template.html -> index.html.
 """
 from __future__ import annotations
 
@@ -112,10 +113,41 @@ def hospitalar(municipios: dict[str, str]) -> list[dict]:
     return saida
 
 
+def plural(n: int, singular: str, plural_: str) -> str:
+    return f"{n} {singular if n == 1 else plural_}"
+
+
+def monitoramentos() -> list[dict]:
+    """Monitoramentos periódicos (Monitoramento-SUS): um por município, regerado a cada competência.
+
+    O link público é registrado no app (aba Monitoramentos > Link público...) ou com `python -m monitor_sus link`."""
+    saida = []
+    for arquivo in sorted((PIPE / "Monitoramento-SUS" / "monitoramentos").glob("*/monitoramento.json")):
+        e = ler(arquivo)
+        if not e:
+            continue
+        ibge6 = str(e.get("municipio", ""))[:6]
+        j = (e.get("janelas") or {}).get("geral") or []
+        alertas = e.get("alertas") or {}
+        criticos, atencao = alertas.get("Crítico", 0), alertas.get("Atenção", 0)
+        detalhe = " · ".join(x for x in (plural(criticos, "alerta crítico", "alertas críticos") if criticos else "",
+                                         plural(atencao, "de atenção", "de atenção") if atencao else "") if x) or "sem alertas críticos"
+        saida.append({
+            "id": f"mon-{ibge6}", "titulo": e.get("nome", arquivo.parent.name), "uf": e.get("uf", ""), "ibge": ibge6,
+            "subtitulo": f'{e.get("nome", "")} · {e.get("uf", "")}',
+            "detalhe": detalhe, "criticos": criticos,
+            "periodo": f"{j[0]} a {j[1]}" if len(j) == 2 else None,
+            "gerado": dia(e.get("atualizado_em")), "publicado": dia((e.get("publicado") or {}).get("em")),
+            "link": e.get("link_publico"), "relatorio": e.get("relatorio"),
+        })
+    return saida
+
+
 def main() -> None:
     a, m = aps(), mac()
     municipios = {x["ibge"]: x["titulo"] for x in a + m if x.get("ibge")}
     h = hospitalar(municipios)
+    mon = monitoramentos()
     dados = {
         "gerado_em": __import__("datetime").datetime.now().strftime("%d/%m/%Y %H:%M"),
         "tipos": [
@@ -125,6 +157,11 @@ def main() -> None:
              "descricao": "Teto, repasses e produção ambulatorial e hospitalar do município.", "estudos": m},
             {"id": "hosp", "nome": "Estabelecimentos", "sigla": "HOSP",
              "descricao": "Diagnóstico individual de hospitais e unidades de saúde (CNES).", "estudos": h},
+            {"id": "mon", "nome": "Monitoramento", "sigla": "MON", "unidade": ["monitoramento", "monitoramentos"],
+             "descricao": "Acompanhamento mensal de MAC, APS e CNES: indicadores, alertas e metas do município.",
+             "sem_link": "O monitoramento foi gerado, mas não tem link público. Registre-o no app Monitoramento-SUS "
+                         "(aba Monitoramentos › Link público…) e rode o gerar_painel.py de novo.",
+             "estudos": mon},
         ],
     }
     html = (AQUI / "template.html").read_text(encoding="utf-8")
@@ -132,7 +169,8 @@ def main() -> None:
     (AQUI / "index.html").write_text(html, encoding="utf-8")
     for t in dados["tipos"]:
         com_bi = sum(1 for x in t["estudos"] if x["link"])
-        print(f'{t["sigla"]}: {len(t["estudos"])} estudos, {com_bi} com BI')
+        unidade = t.get("unidade", ["estudo", "estudos"])[1]
+        print(f'{t["sigla"]}: {len(t["estudos"])} {unidade}, {com_bi} com BI')
 
 
 if __name__ == "__main__":
