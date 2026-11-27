@@ -38,7 +38,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 a{color:inherit}
 
 /* topo */
-header{display:flex;align-items:center;gap:16px;padding:18px max(16px,calc((100% - 1160px)/2));position:sticky;top:0;z-index:5;
+header{display:flex;align-items:center;gap:16px;padding:18px max(16px,calc((100% - 1560px)/2));position:sticky;top:0;z-index:5;
   backdrop-filter:saturate(1.4) blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid transparent;transition:border-color .2s}
 header.rolou{border-color:var(--line)}
 .marca{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.01em}
@@ -55,7 +55,7 @@ header.rolou{border-color:var(--line)}
 .tema:hover{border-color:var(--accent)}
 .tema svg{width:17px;height:17px;stroke:var(--ink-2)}
 
-main{flex:1;width:100%;max-width:1160px;margin:0 auto;padding:28px 16px 56px}
+main{flex:1;width:100%;max-width:1560px;margin:0 auto;padding:28px 16px 56px}
 .tela{animation:entra .35s ease both}
 @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
@@ -67,7 +67,7 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.03em;font-wei
 .resumo div{display:flex;flex-direction:column}
 .resumo b{font-size:26px;letter-spacing:-.02em}
 .resumo span{font-size:13px;color:var(--ink-3)}
-.grade{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin-top:26px}
+.grade1{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(550px,1fr));margin-top:26px}
 .card{position:relative;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);
   transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:flex;flex-direction:column;gap:14px;overflow:hidden}
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-h);border-color:color-mix(in srgb,var(--cor,var(--accent)) 45%,var(--line))}
@@ -87,6 +87,7 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.03em;font-wei
 .card:hover .seta{transform:translateX(3px)}
 
 /* camada 2 */
+.grade2{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin-top:26px}
 .barra{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:24px 0 6px}
 .busca{position:relative;flex:1;min-width:220px;max-width:380px}
 .busca svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--ink-3)}
@@ -97,6 +98,10 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.03em;font-wei
 .chip:hover{border-color:var(--accent)}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .contagem{font-size:13px;color:var(--ink-3);margin-left:auto}
+.ordem{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);transition:all .15s}
+.ordem:hover{border-color:var(--accent)}
+.ordem svg{width:14px;height:14px;stroke:currentColor;transition:transform .2s}
+.ordem[data-dir=asc] svg{transform:rotate(180deg)}
 .est{--cor:var(--c-aps);padding:20px;gap:12px;cursor:pointer}
 .est[data-t=mac]{--cor:var(--c-mac)}.est[data-t=hosp]{--cor:var(--c-hosp)}.est[data-t=mon]{--cor:var(--c-mon)}
 .est .topo{display:flex;align-items:flex-start;gap:12px}
@@ -175,7 +180,7 @@ const dataBr = d => d ? d.split('-').reverse().join('/') : '';
 const tipo = id => DADOS.tipos.find(t => t.id === id);
 const unidade = (t, n) => (t.unidade || ['estudo','estudos'])[n===1?0:1];
 const iniciais = s => s.split(/\s+/).filter(w => w.length>2).slice(0,2).map(w => w[0]).join('').toUpperCase() || s.slice(0,2).toUpperCase();
-const estado = { uf: 'Todos', q: '' };
+const estado = { uf: 'Todos', q: '', ordem: 'desc' };
 
 function crumbs(partes){
   $('#crumbs').innerHTML = partes.map((p,i) => {
@@ -199,7 +204,7 @@ function telaTipos(){
       <div><b>${comBi}</b><span>com BI publicado</span></div>
       <div><b>${munis}</b><span>municípios</span></div>
     </div>
-    <div class="grade">${DADOS.tipos.map(t => `
+    <div class="grade1">${DADOS.tipos.map(t => `
       <button class="card tipo" data-t="${t.id}" data-go="#/${t.id}">
         <span class="sigla">${esc(t.sigla)}</span>
         <h2>${esc(t.nome)}</h2><p>${esc(t.descricao)}</p>
@@ -221,12 +226,22 @@ function telaEstudos(id){
       <label class="busca">${ICO.busca}<input id="q" type="search" placeholder="Buscar município ou estabelecimento" value="${esc(estado.q)}" autocomplete="off"></label>
       <div class="chips" id="chips">${ufs.map(u => `<button class="chip" aria-pressed="${u===estado.uf}" data-uf="${u}">${u}</button>`).join('')}</div>
       <span class="contagem" id="cont"></span>
+      <button class="ordem" id="ordem" type="button"></button>
     </div>
-    <div class="grade" id="lista"></div></section>`;
+    <div class="grade2" id="lista"></div></section>`;
   const pinta = () => {
     const q = norm(estado.q);
     const itens = t.estudos.filter(e => (estado.uf==='Todos' || e.uf===estado.uf) && norm(`${e.titulo} ${e.subtitulo} ${e.ibge}`).includes(q))
-      .sort((a,b) => (b.publicado||'').localeCompare(a.publicado||'') || a.titulo.localeCompare(b.titulo));
+      .sort((a,b) => {
+        // sem data de publicação fica sempre no fim
+        if(!a.publicado !== !b.publicado) return a.publicado ? -1 : 1;
+        const d = (a.publicado||'').localeCompare(b.publicado||'');
+        return (estado.ordem==='asc' ? d : -d) || a.titulo.localeCompare(b.titulo);
+      });
+    const bo = $('#ordem');
+    bo.dataset.dir = estado.ordem;
+    bo.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>${estado.ordem==='asc' ? 'Mais antigos primeiro' : 'Mais recentes primeiro'}`;
+    bo.title = 'Ordenar por data de publicação';
     $('#cont').textContent = `${itens.length} de ${t.estudos.length}`;
     $('#lista').innerHTML = itens.length ? itens.map(e => `
       <article class="card est" data-t="${t.id}" tabindex="0" role="link" data-go="#/${t.id}/${encodeURIComponent(e.id)}">
@@ -241,6 +256,7 @@ function telaEstudos(id){
         </div></article>`).join('') : `<div class="vazio">Nada encontrado.</div>`;
   };
   pinta();
+  $('#ordem').addEventListener('click', () => { estado.ordem = estado.ordem==='asc' ? 'desc' : 'asc'; pinta(); });
   $('#q').addEventListener('input', ev => { estado.q = ev.target.value; pinta(); });
   $('#chips').addEventListener('click', ev => {
     const b = ev.target.closest('[data-uf]'); if(!b) return;

@@ -98,6 +98,10 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.03em;font-wei
 .chip:hover{border-color:var(--accent)}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .contagem{font-size:13px;color:var(--ink-3);margin-left:auto}
+.ordem{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);transition:all .15s}
+.ordem:hover{border-color:var(--accent)}
+.ordem svg{width:14px;height:14px;stroke:currentColor;transition:transform .2s}
+.ordem[data-dir=asc] svg{transform:rotate(180deg)}
 .est{--cor:var(--c-aps);padding:20px;gap:12px;cursor:pointer}
 .est[data-t=mac]{--cor:var(--c-mac)}.est[data-t=hosp]{--cor:var(--c-hosp)}.est[data-t=mon]{--cor:var(--c-mon)}
 .est .topo{display:flex;align-items:flex-start;gap:12px}
@@ -176,7 +180,7 @@ const dataBr = d => d ? d.split('-').reverse().join('/') : '';
 const tipo = id => DADOS.tipos.find(t => t.id === id);
 const unidade = (t, n) => (t.unidade || ['estudo','estudos'])[n===1?0:1];
 const iniciais = s => s.split(/\s+/).filter(w => w.length>2).slice(0,2).map(w => w[0]).join('').toUpperCase() || s.slice(0,2).toUpperCase();
-const estado = { uf: 'Todos', q: '' };
+const estado = { uf: 'Todos', q: '', ordem: 'desc' };
 
 function crumbs(partes){
   $('#crumbs').innerHTML = partes.map((p,i) => {
@@ -222,12 +226,22 @@ function telaEstudos(id){
       <label class="busca">${ICO.busca}<input id="q" type="search" placeholder="Buscar município ou estabelecimento" value="${esc(estado.q)}" autocomplete="off"></label>
       <div class="chips" id="chips">${ufs.map(u => `<button class="chip" aria-pressed="${u===estado.uf}" data-uf="${u}">${u}</button>`).join('')}</div>
       <span class="contagem" id="cont"></span>
+      <button class="ordem" id="ordem" type="button"></button>
     </div>
     <div class="grade2" id="lista"></div></section>`;
   const pinta = () => {
     const q = norm(estado.q);
     const itens = t.estudos.filter(e => (estado.uf==='Todos' || e.uf===estado.uf) && norm(`${e.titulo} ${e.subtitulo} ${e.ibge}`).includes(q))
-      .sort((a,b) => (b.publicado||'').localeCompare(a.publicado||'') || a.titulo.localeCompare(b.titulo));
+      .sort((a,b) => {
+        // sem data de publicação fica sempre no fim
+        if(!a.publicado !== !b.publicado) return a.publicado ? -1 : 1;
+        const d = (a.publicado||'').localeCompare(b.publicado||'');
+        return (estado.ordem==='asc' ? d : -d) || a.titulo.localeCompare(b.titulo);
+      });
+    const bo = $('#ordem');
+    bo.dataset.dir = estado.ordem;
+    bo.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>${estado.ordem==='asc' ? 'Mais antigos primeiro' : 'Mais recentes primeiro'}`;
+    bo.title = 'Ordenar por data de publicação';
     $('#cont').textContent = `${itens.length} de ${t.estudos.length}`;
     $('#lista').innerHTML = itens.length ? itens.map(e => `
       <article class="card est" data-t="${t.id}" tabindex="0" role="link" data-go="#/${t.id}/${encodeURIComponent(e.id)}">
@@ -242,6 +256,7 @@ function telaEstudos(id){
         </div></article>`).join('') : `<div class="vazio">Nada encontrado.</div>`;
   };
   pinta();
+  $('#ordem').addEventListener('click', () => { estado.ordem = estado.ordem==='asc' ? 'desc' : 'asc'; pinta(); });
   $('#q').addEventListener('input', ev => { estado.q = ev.target.value; pinta(); });
   $('#chips').addEventListener('click', ev => {
     const b = ev.target.closest('[data-uf]'); if(!b) return;
